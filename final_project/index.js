@@ -26,7 +26,6 @@ app.use("/customer/auth/*", function auth(req,res,next){
   } else {
     return res.status(403).json({ message: "User not logged in" });
   }
-
 });
 
 
@@ -47,6 +46,7 @@ app.post("/customer/login", (req,res) => {
       req.session.authorization = {
         accessToken, username
       };
+      
       return res.status(200).send("User successfully logged in");
     } else {
       return res.status(208).json({ message: "Invalid Login. Check username and password" });
