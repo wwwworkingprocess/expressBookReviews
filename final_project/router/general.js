@@ -30,53 +30,59 @@ public_users.post("/register", (req,res) => {
 
 
 // Get the book list available in the shop
-public_users.get('/',function (req, res) {
-    const entries = Object.entries(books);
-    const listOfBooksWithISBN = entries.map( ([k,v]) => ({...v, ISBN: k}))
-    //
-    // considering 1..10 as "dummy ISBNs" even they are not
-    //
-    return res.status(200).send(JSON.stringify(listOfBooksWithISBN, null, 4));
+public_users.get('/',async function (req, res) {
+    return new Promise( (resolve ) =>{ 
+        const entries = Object.entries(books);
+        const listOfBooksWithISBN = entries.map( ([k,v]) => ({...v, ISBN: k}));
+        //
+        resolve(res.status(200).send(JSON.stringify(listOfBooksWithISBN, null, 4))); 
+    });
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
-    const isbn = req.params.isbn;
-    const book = books[isbn];
+public_users.get('/isbn/:isbn',async function (req, res) {
+    return new Promise( (resolve) =>{ 
+        const isbn = req.params.isbn;
+        const book = books[isbn];
 
-    if (book) {
-        return res.status(200).send(JSON.stringify({...book, ISBN: isbn}, null, 4));
-    } else {
-        return res.status(404).json({message: "Unable to find book by ISBN"});
-    }
+        if (book) {
+            resolve(res.status(200).send(JSON.stringify({...book, ISBN: isbn}, null, 4)));
+        } else {
+            resolve(res.status(404).json({message: "Unable to find book by ISBN"}));
+        }
+    })
  });
   
 // Get book details based on author
 public_users.get('/author/:author',function (req, res) {
-    const author = req.params.author;
+    return new Promise( (resolve) =>{ 
+        const author = req.params.author;
 
-    const matches = Object.entries(books).filter( ([k,v]) => v.author === author);
-    const booksWithISBN = matches.map( ([k,v]) => ({...v, ISBN: k}));
+        const matches = Object.entries(books).filter( ([k,v]) => v.author === author);
+        const booksWithISBN = matches.map( ([k,v]) => ({...v, ISBN: k}));
 
-    if (booksWithISBN.length > 0) {
-        return res.status(200).send(JSON.stringify(booksWithISBN, null, 4));
-    } else {
-        return res.status(404).json({message: "Unable to find book(s) by author"});
-    }
+        if (booksWithISBN.length > 0) {
+            return res.status(200).send(JSON.stringify(booksWithISBN, null, 4));
+        } else {
+            return res.status(404).json({message: "Unable to find book(s) by author"});
+        }
+    });
 });
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
-    const title = req.params.title;
+public_users.get('/title/:title',async function (req, res) {
+    return new Promise( (resolve) =>{ 
+        const title = req.params.title;
 
-    const matches = Object.entries(books).filter( ([k,v]) => v.title === title);
-    const booksWithISBN = matches.map( ([k,v]) => ({...v, ISBN: k}));
-
-    if (booksWithISBN.length > 0) {
-        return res.status(200).send(JSON.stringify(booksWithISBN, null, 4));
-    } else {
-        return res.status(404).json({message: "Unable to find book(s) by title"});
-    }
+        const matches = Object.entries(books).filter( ([k,v]) => v.title === title);
+        const booksWithISBN = matches.map( ([k,v]) => ({...v, ISBN: k}));
+    
+        if (booksWithISBN.length > 0) {
+            resolve(res.status(200).send(JSON.stringify(booksWithISBN, null, 4)));
+        } else {
+            resolve(res.status(404).json({message: "Unable to find book(s) by title"}));
+        }
+    })
 });
 
 //  Get book review
