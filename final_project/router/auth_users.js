@@ -13,11 +13,6 @@ const isValid = (username)=>{ //returns boolean
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  
-    // You have to give a review as a request query & it must get posted with the username (stored in the session) posted. 
-    // If the same user posts a different review on the same ISBN, it should modify the existing review. 
-    // If another user logs in and posts a review on the same ISBN, it will get added as a different review under the same ISBN.
-
     const username = req.session.authorization.username;
     const isbn = req.params.isbn;
     const review = (req.body.review || '').trim();
@@ -31,17 +26,41 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
     if (!bookByISBN) return res.status(404).json({message: "Unable to find book by ISBN"});
 
     const currentReviews = bookByISBN.reviews;
-
-
     const alreadyExists = Object.keys(currentReviews).includes(username);
-
-    if (alreadyExists) return res.status(200).json({message: "You already made a review!"});
    
     // apply change (mutate)
     currentReviews[username] = review;
 
-    return res.status(200).json({message: "Your review has been saved."});
+    if (alreadyExists) return res.status(200).json({message: "You successfuly updated your review!"});
+
+    return res.status(201).json({message: "Your review has been saved."});
 });
+
+// Delete a book review
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+    const username = req.session.authorization.username;
+    const isbn = req.params.isbn;
+
+    if (!username) return res.status(403).json({ message: "Your session has expired!" });
+    if (!isbn) return res.status(404).json({ message: "Please provide a valid ISBN!" });
+
+    const bookByISBN = books[isbn];
+
+    if (!bookByISBN) return res.status(404).json({message: "Unable to find book by ISBN"});
+
+    const currentReviews = bookByISBN.reviews;
+    const reviewExists = Object.keys(currentReviews).includes(username);
+
+    if (reviewExists) {
+        // apply change (mutate)
+        delete currentReviews[username];
+
+        return res.status(202).json({message: "Your review has been deleted successfuly!"});
+    } else {
+        return res.status(404).json({message: "You have no review to delete."});
+    }
+});
+
 
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
