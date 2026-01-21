@@ -21,81 +21,120 @@ public_users.post("/register", (req,res) => {
 
     if (!username) return res.status(404).json({ message: "Please provide a username!" });
     if (!password) return res.status(404).json({ message: "Please provide a password!" });
-    if (doesExist(username)) return res.status(404).json({ message: "The username already exists!" });
+    if (doesExist(username)) return res.status(404).json({ message: `The username (${username}) already exists!` });
 
     users.push({ "username": username, "password": password });
 
-    return res.status(200).json({ message: "User successfully registered. Now you can login" });
+    return res.status(200).json({ message: `User (${username}) successfully registered. Now you can login` });
 });
 
+const listAllBooks = async () => {
+    return Object.entries(books).map(([isbn, book]) => ({
+        ...book,
+        ISBN: String(isbn),
+    }));
+};
+
+const findBookByISBN = async (isbn) => {
+    const book = books[isbn];
+    return book ? { ...book, ISBN: String(isbn) } : null;
+};
+
+const findBooksByAuthor = async (author) => {
+    return Object.entries(books)
+        .filter(
+        ([, book]) =>
+            book.author === author
+        )
+        .map(([isbn, book]) => ({ ...book, ISBN: String(isbn) }));
+};
+
+const findBooksByTitle = async (title) => {
+    return Object.entries(books)
+        .filter(
+        ([, book]) => book.title === title
+        )
+        .map(([isbn, book]) => ({ ...book, ISBN: String(isbn) }));
+};
+
+const findReviewsByISBN = async (isbn) => {
+    const book = books[isbn];
+
+    return book ? book.reviews : null;
+};
 
 // Get the book list available in the shop
 public_users.get('/',async function (req, res) {
-    return new Promise( (resolve ) =>{ 
-        const entries = Object.entries(books);
-        const listOfBooksWithISBN = entries.map( ([k,v]) => ({...v, ISBN: k}));
-        //
-        resolve(res.status(200).send(JSON.stringify(listOfBooksWithISBN, null, 4))); 
-    });
+    try {
+        const books = await listAllBooks(); // non blocking data access
+    
+        return res.status(200).json(books); 
+    } catch (err) {
+        return res.status(500).json({ message: "Error during processing your request" });
+    }
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',async function (req, res) {
-    return new Promise( (resolve) =>{ 
-        const isbn = req.params.isbn;
-        const book = books[isbn];
-
-        if (book) {
-            resolve(res.status(200).send(JSON.stringify({...book, ISBN: isbn}, null, 4)));
-        } else {
-            resolve(res.status(404).json({message: "Unable to find book by ISBN"}));
-        }
-    })
- });
+public_users.get('/isbn/:isbn', async function (req, res) {
+    try {
+      const isbn = req.params.isbn;
+      const book = await findBookByISBN(isbn);
+  
+      if (book) {
+        return res.status(200).json(book);
+      } else {
+        return res.status(404).json({ message: "Unable to find book by ISBN" });
+      }
+    } catch (err) {
+      return res.status(500).json({ message: "Error during processing your request" });
+    }
+});
   
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
-    return new Promise( (resolve) =>{ 
-        const author = req.params.author;
-
-        const matches = Object.entries(books).filter( ([k,v]) => v.author === author);
-        const booksWithISBN = matches.map( ([k,v]) => ({...v, ISBN: k}));
-
-        if (booksWithISBN.length > 0) {
-            return res.status(200).send(JSON.stringify(booksWithISBN, null, 4));
-        } else {
-            return res.status(404).json({message: "Unable to find book(s) by author"});
-        }
-    });
+public_users.get('/author/:author',async function (req, res) {
+    try {
+      const author = req.params.author;
+      const books = await findBooksByAuthor(author);
+  
+      if (books.length > 0) {
+        return res.status(200).json(books);
+      } else {
+        return res.status(404).json({ message: "Unable to find book(s) by author" });
+      }
+    } catch (err) {
+      return res.status(500).json({ message: "Error during processing your request" });
+    }
 });
 
 // Get all books based on title
 public_users.get('/title/:title',async function (req, res) {
-    return new Promise( (resolve) =>{ 
-        const title = req.params.title;
-
-        const matches = Object.entries(books).filter( ([k,v]) => v.title === title);
-        const booksWithISBN = matches.map( ([k,v]) => ({...v, ISBN: k}));
-    
-        if (booksWithISBN.length > 0) {
-            resolve(res.status(200).send(JSON.stringify(booksWithISBN, null, 4)));
-        } else {
-            resolve(res.status(404).json({message: "Unable to find book(s) by title"}));
-        }
-    })
+    try {
+      const title = req.params.title;
+      const books = await findBooksByTitle(title);
+  
+      if (books) {
+        return res.status(200).json(books);
+      } else {
+        return res.status(404).json({ message: "Unable to find book(s) by title" });
+      }
+    } catch (err) {
+      return res.status(500).json({ message: "Error during processing your request" });
+    }
 });
 
 //  Get book review
-public_users.get('/review/:isbn',function (req, res) {
-    const isbn = req.params.isbn;
-    const book = books[isbn];
-
-    if (book) {
-        const reviews = Object.values(book.reviews);
-        //
-        return res.status(200).send(JSON.stringify(reviews, null, 4));
-    } else {
-        return res.status(404).json({message: "Unable to find book by ISBN"});
+public_users.get('/review/:isbn',async function (req, res) {
+    try {
+      const isbn = req.params.isbn;
+      const reviews = await findReviewsByISBN(isbn);
+  
+      if (reviews !== null) {
+        return res.status(200).json(reviews);
+      } else {
+        return res.status(404).json({ message: "Unable to find book by ISBN" });
+      }
+    } catch (err) {
+      return res.status(500).json({ message: "Error during processing your request" });
     }
 });
 
