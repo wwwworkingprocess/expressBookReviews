@@ -26,6 +26,47 @@ const booksToArray = (obj) => {
     return Object.entries(obj).map(wrapISBN);
 }
 
+// Get the book list available in the shop
+public_users.get('/', (req, res) => getBooksAsync()
+    .then(booksToArray)
+    .then( (arr) => res.status(200).json(arr))
+    .catch((err) => res.status(500).json({ message: "Error during processing your request" })));
+    
+
+// Get book details based on ISBN
+public_users.get('/isbn/:isbn', async function (req, res) {
+    return getBooksAsync()
+        .then(booksToArray)
+        .then( (arr) => arr.find( b => b.ISBN === req.params.isbn) )
+        .then( (book) => (book) ? 
+            res.status(200).json(book) :
+            res.status(404).json({ message: "Unable to find book by ISBN" })
+        ).catch( (err) => res.status(500).json({ message: "Error during processing your request" }))
+});
+
+// Get book details based on author
+public_users.get('/author/:author',async function (req, res) {
+    return getBooksAsync()
+        .then(booksToArray)
+        .then( (arr) => arr.filter( b => b.author === req.params.author) )
+        .then( (booksMatchingAuthor) => (booksMatchingAuthor.length > 0) ? 
+            res.status(200).json(booksMatchingAuthor) :
+            res.status(404).json({ message:  "Unable to find book(s) by author" })
+        ).catch( (err) => res.status(500).json({ message: "Error during processing your request" }))
+});
+
+// Get all books based on title
+public_users.get('/title/:title',async function (req, res) {
+    return getBooksAsync()
+        .then(booksToArray)
+        .then( (arr) => arr.filter( b => b.title === req.params.title) )
+        .then( (booksMatchingTitle) => (booksMatchingTitle.length > 0) ? 
+            res.status(200).json(booksMatchingTitle) :
+            res.status(404).json({ message:  "Unable to find book(s) by title" })
+        ).catch( (err) => res.status(500).json({ message: "Error during processing your request" }))
+});
+
+
 const doesExist = (username) => users.find( u => u.username === username) !== undefined;
 
 const authenticatedUser = (username,password)=>{ //returns boolean
@@ -51,73 +92,11 @@ public_users.post("/register", (req,res) => {
 });
 
 
-const findBookByISBN = async (isbn) => {
-    const book = books[isbn];
-    return book ? { ...book, ISBN: String(isbn) } : null;
-};
-
-const findBooksByAuthor = async (author) => {
-    return Object.entries(books)
-        .filter(
-        ([, book]) =>
-            book.author === author
-        )
-        .map(([isbn, book]) => ({ ...book, ISBN: String(isbn) }));
-};
-
-const findBooksByTitle = async (title) => {
-    return Object.entries(books)
-        .filter(
-        ([, book]) => book.title === title
-        )
-        .map(([isbn, book]) => ({ ...book, ISBN: String(isbn) }));
-};
-
 const findReviewsByISBN = async (isbn) => {
     const book = books[isbn];
 
     return book ? book.reviews : null;
 };
-
-// Get the book list available in the shop
-public_users.get('/', (req, res) => getBooksAsync()
-    .then(booksToArray)
-    .then( (arr) => res.status(200).json(arr))
-    .catch((err) => res.status(500).json({ message: "Error during processing your request" })));
-
-
-// Get book details based on ISBN
-public_users.get('/isbn/:isbn', async function (req, res) {
-    return getBooksAsync()
-        .then(booksToArray)
-        .then( (arr) => arr.find( b => b.ISBN === req.params.isbn) )
-        .then( (book) => (book) ? 
-            res.status(200).json(book) :
-            res.status(404).json({ message: "Unable to find book by ISBN" })
-        ).catch( (err) => res.status(500).json({ message: "Error during processing your request" }))
-});
-  
-// Get book details based on author
-public_users.get('/author/:author',async function (req, res) {
-    return getBooksAsync()
-        .then(booksToArray)
-        .then( (arr) => arr.filter( b => b.author === req.params.author) )
-        .then( (booksMatchingAuthor) => (booksMatchingAuthor.length > 0) ? 
-            res.status(200).json(booksMatchingAuthor) :
-            res.status(404).json({ message:  "Unable to find book(s) by author" })
-        ).catch( (err) => res.status(500).json({ message: "Error during processing your request" }))
-});
-
-// Get all books based on title
-public_users.get('/title/:title',async function (req, res) {
-    return getBooksAsync()
-        .then(booksToArray)
-        .then( (arr) => arr.filter( b => b.title === req.params.title) )
-        .then( (booksMatchingTitle) => (booksMatchingTitle.length > 0) ? 
-            res.status(200).json(booksMatchingTitle) :
-            res.status(404).json({ message:  "Unable to find book(s) by title" })
-        ).catch( (err) => res.status(500).json({ message: "Error during processing your request" }))
-});
 
 //  Get book review
 public_users.get('/review/:isbn',async function (req, res) {
